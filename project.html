@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY BLOG | Modern Journal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --glass: #e9b6b6d9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2000&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        
+        header {
+            padding: 40px 20px;
+            text-align: center;
+            color: #111;
+        }
+
+        .site-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 3rem;
+            color: rgb(15, 12, 10);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin: 0;
+        }
+
+       
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            flex: 1; 
+        }
+
+        
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Form Elements --- */
+        h2 { margin-top: 0; font-weight: 800; }
+
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.8s;
+        }
+
+        .btn-primary { background: #1a1a1a; color: rgb(194, 133, 133); width: 100%; font-size: 1.1rem; }
+        .btn-primary:hover { background: #333; transform: scale(1.01); }
+        
+    
+        .post {
+            background: rgb(252, 246, 246);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            transition: transform 0.8s;
+        }
+        .post:hover { transform: translateY(-5px); }
+        .post-title { font-size: 1.5rem; margin-bottom: 10px; color: #111; }
+        .post-content { color: #444; line-height: 1.6; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-edit { background: #f3f4f6; color: #374151; }
+        .btn-delete { background: #fee2e2; color: #b91c1c; }
+        .btn-save { background: var(--success); color: white; }
+
+    
+        footer {
+            background: rgba(0,0,0,0.8);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            padding: 25px;
+            backdrop-filter: blur(5px);
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 class="site-title">MY BLOG</h1>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h2>New Story</h2>
+        <form id="blogForm">
+            <input type="text" id="titleInput" placeholder="Enter title..." required>
+            <textarea id="contentInput" rows="4" placeholder="Write your content here..." required></textarea>
+            <button type="submit" class="btn btn-primary">Publish Now</button>
+        </form>
+    </div>
+
+    <div id="postsFeed"></div>
+</div>
+
+<footer>
+    <p>&copy; 2026 MY BLOG</p>
+</footer>
+
+<script>
+    const blogForm = document.getElementById('blogForm');
+    const postsFeed = document.getElementById('postsFeed');
+    let posts = JSON.parse(localStorage.getItem('posts')) || [];
+
+    function saveAndRender() {
+        localStorage.setItem('posts', JSON.stringify(posts));
+        renderPosts();
+    }
+
+    function renderPosts() {
+        postsFeed.innerHTML = '';
+        posts.forEach((post, index) => {
+            const postElement = document.createElement('div');
+            postElement.className = 'card post';
+            
+            
+            if (post.isEditing) {
+                postElement.innerHTML = `
+                    <input type="text" id="editTitle${index}" value="${escapeHTML(post.title)}">
+                    <textarea id="editContent${index}" rows="4">${escapeHTML(post.content)}</textarea>
+                    <div class="btn-group">
+                        <button class="btn btn-save" onclick="saveEdit(${index})">Save Changes</button>
+                        <button class="btn btn-edit" onclick="toggleEdit(${index})">Cancel</button>
+                    </div>
+                `;
+            } else {
+                postElement.innerHTML = `
+                    <h2 class="post-title">${escapeHTML(post.title)}</h2>
+                    <p class="post-content">${escapeHTML(post.content)}</p>
+                    <div class="btn-group">
+                        <button class="btn btn-edit" onclick="toggleEdit(${index})">Edit</button>
+                        <button class="btn btn-delete" onclick="deletePost(${index})">Delete</button>
+                    </div>
+                `;
+            }
+            postsFeed.appendChild(postElement);
+        });
+    }
+
+    // Add New Post
+    blogForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newPost = {
+            title: document.getElementById('titleInput').value,
+            content: document.getElementById('contentInput').value,
+            isEditing: false
+        };
+        posts.unshift(newPost);
+        blogForm.reset();
+        saveAndRender();
+    });
+
+    // Toggle Edit Mode
+    window.toggleEdit = (index) => {
+        posts[index].isEditing = !posts[index].isEditing;
+        renderPosts();
+    };
+
+    // Save Edit
+    window.saveEdit = (index) => {
+        const updatedTitle = document.getElementById(`editTitle${index}`).value;
+        const updatedContent = document.getElementById(`editContent${index}`).value;
+        
+        posts[index].title = updatedTitle;
+        posts[index].content = updatedContent;
+        posts[index].isEditing = false;
+        saveAndRender();
+    };
+
+    // Delete Post
+    window.deletePost = (index) => {
+        if(confirm("Delete this masterpiece?")) {
+            posts.splice(index, 1);
+            saveAndRender();
+        }
+    };
+
+    function escapeHTML(str) {
+        const p = document.createElement('p');
+        p.textContent = str;
+        return p.innerHTML;
+    }
+
+    renderPosts();
+</script>
+
+</body>
+</html>
